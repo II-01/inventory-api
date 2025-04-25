@@ -13,6 +13,17 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
+    - name: Debug Secret Variables
+      run: |
+        echo "🔍 GCE_USER: ${{ secrets.GCE_USER }}"
+        echo "🔍 GCE_IP: ${{ secrets.GCE_IP }}"
+        if [ -z "${{ secrets.GCE_SSH_KEY }}" ]; then
+          echo "❌ GCE_SSH_KEY is empty or not set."
+          exit 1
+        else
+          echo "✅ GCE_SSH_KEY is set."
+        fi
+
     - name: SSH and deploy to GCE
       uses: appleboy/ssh-action@v0.1.6
       with:
@@ -20,9 +31,11 @@ jobs:
         username: ${{ secrets.GCE_USER }}
         key: ${{ secrets.GCE_SSH_KEY }}
         script: |
+          echo "✅ SSH connected. Start deploy..."
           cd ~/inventory-api || git clone https://github.com/II-01/inventory-api.git ~/inventory-api
           cd ~/inventory-api
           git pull origin main
           pip3 install -r requirements.txt
           pkill -f "app.py" || true
           nohup python3 app.py > flask.log 2>&1 &
+        debug: true
